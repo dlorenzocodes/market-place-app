@@ -1,6 +1,7 @@
 import { toast } from 'react-toastify'
 import { useEffect, useState } from 'react'
 import Spinner from '../components/Spinner'
+import { useParams } from 'react-router-dom'
 import { db } from '../config/firebase.config'
 import ListingItem from '../components/ListingItem'
 import { 
@@ -14,11 +15,12 @@ import {
 } from 'firebase/firestore'
 
 
-function Offers() {
+function Category() {
     const [listings, setListings] = useState(null)
     const [loading, setLoading] = useState(true)
     const [lastFetchListing, setLastFetchListing] = useState(null)
 
+    const params = useParams()
 
     useEffect(() => {
         const fetchListings = async () => {
@@ -29,9 +31,9 @@ function Offers() {
                 // Create query
                 const q = query(
                     listingRef, 
-                    where('offer', '==', true), 
+                    where('type', '==', params.categoryName), 
                     orderBy('timestamp', 'desc'),
-                    limit(3)
+                    limit(10)
                 )
 
                 // Execute the query
@@ -48,7 +50,7 @@ function Offers() {
                         data: listing.data()
                     })
                 })
-
+                
                 setListings(listings)
                 setLoading(false)
             }catch(error){
@@ -57,10 +59,10 @@ function Offers() {
         }
 
         fetchListings()
-    }, [])
+    }, [params.categoryName])
 
 
-
+    // Pagination / Load More
     const onFetchMoreListings = async () => {
         try{
             // Get reference
@@ -69,7 +71,7 @@ function Offers() {
             // Create query
             const q = query(
                 listingRef, 
-                where('offer', '==', true), 
+                where('type', '==', params.categoryName), 
                 orderBy('timestamp', 'desc'),
                 startAfter(lastFetchListing),
                 limit(10)
@@ -89,9 +91,10 @@ function Offers() {
                     data: listing.data()
                 })
             })
-
+            
             setListings((prevState) => [...prevState, ...listings])
             setLoading(false)
+
         }catch(error){
             toast.error('Could not fetch listings!')
         }
@@ -99,14 +102,11 @@ function Offers() {
 
 
 
-
-
-
     return (
         <div className="category">
             <header>
                 <p className="pageHeader">
-                    Offers
+                    Places for {params.categoryName === 'rent' ? 'rent' : 'sale'}
                 </p>
             </header>
 
@@ -130,11 +130,10 @@ function Offers() {
                         )}
                     </>
                 ) : (
-                    <p>There are no current offers</p>
+                    <p>No listings for {params.categoryName}</p>
                 )}
         </div>
     )
 }
 
-export default Offers
-
+export default Category
